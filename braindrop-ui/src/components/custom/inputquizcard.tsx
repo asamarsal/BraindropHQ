@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import type { QuizPageItem } from "@/components/custom/viewhalamanquizcard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,17 +43,36 @@ const ShapeIcon = ({ shape }: { shape: Shape }) => {
   return <Icon className="h-4 w-4" />;
 };
 
-export function InputquizCard() {
+type InputquizCardProps = {
+  selectedQuestion?: QuizPageItem | null;
+  onUpdateQuestion?: (patch: Partial<QuizPageItem>) => void;
+};
+
+export function InputquizCard({ selectedQuestion = null, onUpdateQuestion }: InputquizCardProps) {
   const [question, setQuestion] = useState("");
   const [timerquiz, setTimerquiz] = useState("");
   const [answers, setAnswers] = useState<Answer[]>(defaultAnswers);
   const [correctId, setCorrectId] = useState<string | null>(null);
   const mediaRef = useRef<HTMLInputElement | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const onDropMedia = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    console.log("Question media selected:", files[0]);
+    const file = files[0];
+    console.log("Question media selected:", file);
+    
+    // Create preview URL
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const onAnswerMedia = (id: string, file?: File) => {
     setAnswers((prev) => prev.map((a) => (a.id === id ? { ...a, media: file ?? null } : a)));
@@ -93,90 +113,157 @@ export function InputquizCard() {
     green: "bg-green-600",
   };
 
-  return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
-      {/* Input pertanyaan */}
-      <Input
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder="Write your own question..."
-        className="h-12 text-lg rounded-xl bg-white dark:bg-neutral-900/70"
-      />
+  useEffect(() => {
+    if (selectedQuestion) {
+      setTimerquiz(String(selectedQuestion.durationSec ?? ""));
+    } else {
+      setTimerquiz("");
+    }
+  }, [selectedQuestion?.id]);
 
-      <div className="flex flex-col gap-1 items-end"> {/* items-end membuat konten rata kanan */}
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            min={0}
-            value={timerquiz}
-            onChange={(e) => setTimerquiz(e.target.value)}
-            placeholder="30"
-            className="w-28 h-10 rounded-lg bg-white dark:bg-neutral-900/70"
-          />
-          <span className="text-xl text-white">seconds</span>
+  const handleTimerChange = (val: string) => {
+    setTimerquiz(val);
+    const n = Number(val);
+    if (selectedQuestion && onUpdateQuestion) {
+      onUpdateQuestion({ durationSec: Number.isFinite(n) ? n : undefined });
+    }
+  };
+
+
+  return (
+      <div className="w-full max-w-4xl mx-auto space-y-4">
+        {/* Input pertanyaan */}
+        <Input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Write your own question..."
+          className="h-12 text-lg rounded-xl bg-white dark:bg-neutral-900/70"
+        />
+
+        <div className="flex flex-row gap-2 items-end">
+          {Array.from({ length: 8 }).map((_, i) => {
+            const idx = i + 1;
+            return (
+              <div key={`bg${idx}`} className="w-[65px] h-[40px] rounded-md overflow-hidden">
+                <img
+                  src={`/background/bg${idx}.png`}
+                  alt={`Background ${idx}`}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </div>
+            );
+          })}
+
+          <div className="flex items-center gap-2 ml-auto">
+            <Input
+              type="number"
+              min={0}
+              value={timerquiz}
+              onChange={(e) => handleTimerChange(e.target.value)}
+              placeholder="30"
+              className="w-28 h-10 rounded-lg bg-white dark:bg-neutral-900/70"
+            />
+            <h1 className="text-white">Seconds</h1>
+          </div>
+        </div>
+
+
+        {/* Kartu upload media pertanyaan */}
+        <Card className="border-0 shadow-md bg-white dark:bg-neutral-900/70">
+          <CardContent className="p-0">
+            <label
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                onDropMedia(e.dataTransfer.files);
+              }}
+              className={cn(
+                "flex flex-col items-center justify-center text-center gap-2 h-56 rounded-xl cursor-pointer relative",
+                previewUrl ? "p-2" : ""
+              )}
+            >
+              {previewUrl ? (
+                // Preview container
+                <div className="relative w-full h-full group">
+                  <img 
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center rounded-lg">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPreviewUrl(null);
+                      }}
+                    >
+                      Change Media
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                // Upload UI
+                <>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-neutral-800">
+                    <UploadCloud className="h-12 w-12" />
+                  </div>
+                  <div className="text-sm font-medium">Find or attach your media</div>
+                  <div className="text-xs text-neutral-500">
+                    <span className="underline">Import file</span> or drag your file to here to upload
+                  </div>
+                  <input
+                    ref={mediaRef}
+                    type="file"
+                    accept="image/*,video/*,audio/*"
+                    className="hidden"
+                    onChange={(e) => onDropMedia(e.target.files)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => mediaRef.current?.click()}
+                  >
+                    <Plus className="mr-1 h-4 w-4" /> Choose File
+                  </Button>
+                </>
+              )}
+            </label>
+          </CardContent>
+        </Card>
+
+        {/* Grid jawaban */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {answers.map((a) => (
+            <AnswerTile
+              key={a.id}
+              answer={a}
+              isCorrect={correctId === a.id}
+              onChangeText={(val) =>
+                setAnswers((prev) => prev.map((x) => (x.id === a.id ? { ...x, text: val } : x)))
+              }
+              onToggleCorrect={() => setCorrectId((prev) => (prev === a.id ? null : a.id))}
+              onPickMedia={(file) => onAnswerMedia(a.id, file)}
+              onRemove={() => removeAnswer(a.id)}
+              showRemove={(a.optional ?? false) || answers.length > 2}
+              barClass={colorClasses[a.color]}
+            />
+          ))}
+        </div>
+
+        {/* Tambah jawaban */}
+        <div className="flex justify-center">
+          <Button variant="secondary" className="rounded-full" onClick={addMoreAnswer}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add more answer
+          </Button>
         </div>
       </div>
 
-
-      {/* Kartu upload media pertanyaan */}
-      <Card className="border-0 shadow-md bg-white dark:bg-neutral-900/70">
-        <CardContent className="p-0">
-          <label
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              onDropMedia(e.dataTransfer.files);
-            }}
-            className="flex flex-col items-center justify-center text-center gap-2 h-56 rounded-xl cursor-pointer"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-neutral-800">
-              <UploadCloud className="h-12 w-12" />
-            </div>
-            <div className="text-sm font-medium">Find or attach your media</div>
-            <div className="text-xs text-neutral-500">
-              <span className="underline">Import file</span> or drag your file to here to upload
-            </div>
-            <input
-              ref={mediaRef}
-              type="file"
-              accept="image/*,video/*,audio/*"
-              className="hidden"
-              onChange={(e) => onDropMedia(e.target.files)}
-            />
-            <Button type="button" variant="secondary" size="sm" onClick={() => mediaRef.current?.click()}>
-              <Plus className="mr-1 h-4 w-4" /> Choose File
-            </Button>
-          </label>
-        </CardContent>
-      </Card>
-
-      {/* Grid jawaban */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {answers.map((a) => (
-          <AnswerTile
-            key={a.id}
-            answer={a}
-            isCorrect={correctId === a.id}
-            onChangeText={(val) =>
-              setAnswers((prev) => prev.map((x) => (x.id === a.id ? { ...x, text: val } : x)))
-            }
-            onToggleCorrect={() => setCorrectId((prev) => (prev === a.id ? null : a.id))}
-            onPickMedia={(file) => onAnswerMedia(a.id, file)}
-            onRemove={() => removeAnswer(a.id)}
-            showRemove={(a.optional ?? false) || answers.length > 2}
-            barClass={colorClasses[a.color]}
-          />
-        ))}
-      </div>
-
-      {/* Tambah jawaban */}
-      <div className="flex justify-center">
-        <Button variant="secondary" className="rounded-full" onClick={addMoreAnswer}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add more answer
-        </Button>
-      </div>
-    </div>
   );
 }
 

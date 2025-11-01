@@ -17,6 +17,7 @@ import {
   GripVertical,
   CheckCircle2,
   X,
+  Trash2,
 } from "lucide-react";
 
 /** -------------------- Types -------------------- */
@@ -36,68 +37,68 @@ type Props = {
   onAdd?: () => void;
   onCreate?: () => void;
   onTitleChange?: (value: string) => void;
-  quizTitle?: string;
+
+  setQuestions?: React.Dispatch<React.SetStateAction<QuizPageItem[]>>;
 };
 
 /** -------------------- Component -------------------- */
 export function ViewhalamanquizCard({
-  items,
+  items = [],
   activeId,
   onSelect,
   onAdd,
   onCreate,
-  quizTitle,
   onTitleChange,
+  setQuestions,
 }: Props) {
-  const [questions, setQuestions] = useState<QuizPageItem[]>([
-    {
-      id: "q1",
-      title: "Pertanyaan 1",
-      durationSec: 20,
-      hasMedia: false,
-      thumbUrl: "",
-      isValid: false,
-    }
-  ]);
 
+  const genId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `q${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+  const questions = items;
+  
   const handleAddQuestion = () => {
-    const newQuestion: QuizPageItem = {
-      id: `q${questions.length + 1}`,
-      title: `Pertanyaan ${questions.length + 1}`,
-      durationSec: 20,
-      hasMedia: false,
-      thumbUrl: "",
-      isValid: false,
-    };
-    setQuestions([...questions, newQuestion]);
+    if (!setQuestions) return;
+    setQuestions((prev) => {
+      const newQuestion: QuizPageItem = {
+        id: genId(),
+        title: `Pertanyaan ${prev.length + 1}`,
+        durationSec: 20,
+        hasMedia: false,
+        thumbUrl: "",
+        isValid: false,
+      };
+      return [...prev, newQuestion];
+    });
   };
 
   const onDragEnd = (result: any) => {
-    if (!result.destination) return;
-
-    const items = Array.from(questions);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setQuestions(items);
+    if (!result.destination || !setQuestions) return;
+    setQuestions((prev) => {
+      const items = Array.from(prev);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      // renumber titles to match new order
+      return items.map((q, i) => ({ ...q, title: `Pertanyaan ${i + 1}` }));
+    });
   };
 
   const handleRemoveQuestion = (id: string) => {
-    setQuestions(prev => {
+    if (!setQuestions) return;
+    setQuestions((prev) => {
       if (prev.length <= 1) return prev; // minimal 1 pertanyaan
-      return prev.filter(q => q.id !== id);
+      const next = prev.filter((q) => q.id !== id);
+      // renumber titles after removal
+      return next.map((q, i) => ({ ...q, title: `Pertanyaan ${i + 1}` }));
     });
   };
 
   return (
-    <aside className="h-[calc(100vh-3.5rem)] w-[260px] shrink-0 border-r bg-white/50 dark:bg-neutral-900/80 backdrop-blur p-3 flex flex-col">
+    <aside className="h-[calc(100vh-3.5rem)] w-[260px] shrink-0 border-r bg-white/50 dark:bg-neutral-900/80 backdrop-blur p-3 flex flex-col overflow-x-hidden">
       <div className="space-y-2">
         <div className="text-xs font-medium text-black">Quiz</div>
-        <Input
-          value={quizTitle ?? "Quiz Title"}
-          onChange={(e) => onTitleChange?.(e.target.value)}
-          className="h-9 rounded-lg text-sm"
-        />
       </div>
 
       {/* Daftar halaman/pertanyaan dengan drag and drop */}
@@ -105,7 +106,7 @@ export function ViewhalamanquizCard({
         <Droppable droppableId="questions">
           {(provided) => (
             <div 
-              className="space-y-2 mt-4 flex-1 overflow-auto"
+              className="space-y-2 mt-4 flex-1 overflow-auto overflow-x-hidden"
               {...provided.droppableProps}
               ref={provided.innerRef}
             >
@@ -116,6 +117,7 @@ export function ViewhalamanquizCard({
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
+                      className="w-full"
                     >
                       <QuizListItem
                         index={idx + 1}
@@ -168,29 +170,11 @@ function QuizListItem({
     <Card
       onClick={onClick}
       className={cn(
-        "relative cursor-pointer border-2 transition-all rounded-xl overflow-visible",
+        "relative w-full cursor-pointer rounded-xl border-2 transition-all overflow-hidden",
         active
           ? "border-violet-500 shadow-md"
           : "border-neutral-200 dark:border-neutral-800 hover:shadow-sm"
-      )}
-    >
-
-      {/* Tombol X (hapus card) */}
-      {onRemove && (
-        <button
-          type="button"
-          title="Hapus"
-          onClick={(e) => {
-            e.stopPropagation(); // jangan trigger onClick card
-            onRemove();
-          }}
-          className="absolute -top-2 -right-2 z-10 grid h-6 w-6 place-items-center
-                     rounded-full border bg-white text-neutral-600 shadow-sm
-                     hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      )}
+      )}>
 
       <CardContent className="p-2">
         <div className="flex items-center gap-2">
@@ -202,16 +186,6 @@ function QuizListItem({
           {/* Badge nomor */}
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-600 text-white text-xs font-semibold">
             {index}
-          </div>
-
-          {/* Thumbnail kecil */}
-          <div className="h-10 w-10 overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            {thumbUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumbUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <ImageIcon className="h-4 w-4 text-neutral-400" />
-            )}
           </div>
 
           {/* Title + meta */}
@@ -235,6 +209,21 @@ function QuizListItem({
               <CheckCircle2 className="h-4 w-4" />
             </div>
           )}
+
+          {/* Tombol hapus: rectangle di sebelah kanan, bg-red dengan icon trash */}
+          {onRemove && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              className="inline-flex items-center gap-2 py-2 px-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}    
+
         </div>
       </CardContent>
     </Card>
