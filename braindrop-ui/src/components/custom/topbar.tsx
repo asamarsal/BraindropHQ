@@ -4,6 +4,7 @@ import { Volume2, VolumeOff, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { LoginCard } from "@/components/custom/logincard";
+import { ThemeLanguageToggle } from "@/components/custom/theme-language-toggle";
 
 export default function Topbar() {
   const [muted, setMuted] = useState<boolean>(false);
@@ -77,7 +78,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-black/60 backdrop-blur-md border-b border-black shadow-sm flex items-center z-50">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white/60 dark:bg-black/50 backdrop-blur-md border-b border-white/20 shadow-sm flex items-center z-50 transition-all">
         <audio
           ref={audioRef}
           src="/music/background-music.mp3"
@@ -88,9 +89,10 @@ export default function Topbar() {
         />
         <div className="w-full flex justify-between">
           <Link href="/" className="pl-2">
-            <img src="/icon/braindrophq3.png" alt="BrainDrop HQ Logo" className="h-8 w-auto pt-2" />
+            <img src="/icon/braindrophq3.png" alt="BrainDrop HQ Logo" className="h-8 w-auto pt-2 dark:invert transition-all" />
           </Link>
-          <div className="flex gap-2 items-end pr-4">
+          <div className="flex gap-2 items-center pr-4">
+            <ThemeLanguageToggle />
             <div>
               <button
                 type="button"

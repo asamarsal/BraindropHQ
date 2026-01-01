@@ -21,6 +21,18 @@ import {
 } from "lucide-react";
 
 /** -------------------- Types -------------------- */
+/** -------------------- Types -------------------- */
+export type Shape = "triangle" | "diamond" | "circle" | "square" | "star" | "moon" | "sigma";
+
+export type Answer = {
+  id: string;
+  text: string;
+  color: "red" | "blue" | "yellow" | "green" | "purple" | "orange";
+  shape: Shape;
+  optional?: boolean;
+  media?: File | null | string;
+};
+
 export type QuizPageItem = {
   id: string;
   title: string;
@@ -28,6 +40,11 @@ export type QuizPageItem = {
   hasMedia?: boolean;
   thumbUrl?: string;
   isValid?: boolean; // contoh validasi: semua jawaban terisi
+
+  // Persisted state
+  answers?: Answer[];
+  backgroundId?: number | string | null;
+  questionMedia?: string | null;
 };
 
 type Props = {
@@ -80,8 +97,8 @@ export function ViewhalamanquizCard({
       const items = Array.from(prev);
       const [reorderedItem] = items.splice(result.source.index, 1);
       items.splice(result.destination.index, 0, reorderedItem);
-      // renumber titles to match new order
-      return items.map((q, i) => ({ ...q, title: `Pertanyaan ${i + 1}` }));
+      // renumber titles to match new order -- REMOVED to preserve custom titles
+      return items;
     });
   };
 
@@ -90,15 +107,15 @@ export function ViewhalamanquizCard({
     setQuestions((prev) => {
       if (prev.length <= 1) return prev; // minimal 1 pertanyaan
       const next = prev.filter((q) => q.id !== id);
-      // renumber titles after removal
-      return next.map((q, i) => ({ ...q, title: `Pertanyaan ${i + 1}` }));
+      // renumber titles after removal -- REMOVED to preserve custom titles
+      return next;
     });
   };
 
   return (
-    <aside className="h-full w-[260px] shrink-0 border-r bg-white/50 dark:bg-neutral-900/80 backdrop-blur p-3 flex flex-col overflow-x-hidden">
+    <aside className="h-full w-[260px] shrink-0 border-r border-white/20 bg-white/60 dark:bg-black/50 backdrop-blur-md p-3 flex flex-col overflow-x-hidden">
       <div className="space-y-2">
-        <div className="text-xs font-medium text-black">Quiz</div>
+        <div className="text-xs font-medium text-slate-900 dark:text-white">Quiz</div>
       </div>
 
       {/* Daftar halaman/pertanyaan dengan drag and drop */}
@@ -170,10 +187,10 @@ function QuizListItem({
     <Card
       onClick={onClick}
       className={cn(
-        "relative w-full cursor-pointer rounded-xl border-2 transition-all overflow-hidden",
+        "relative w-full cursor-pointer rounded-xl border-2 transition-all overflow-hidden bg-white/40 dark:bg-white/5 backdrop-blur-sm",
         active
-          ? "border-violet-500 shadow-md"
-          : "border-neutral-200 dark:border-neutral-800 hover:shadow-sm"
+          ? "border-violet-500 shadow-md bg-white/60 dark:bg-white/10"
+          : "border-transparent hover:border-white/20 hover:bg-white/50 dark:hover:bg-white/10"
       )}>
 
       <CardContent className="p-2">
