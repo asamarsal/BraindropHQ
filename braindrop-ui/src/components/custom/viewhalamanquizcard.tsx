@@ -58,7 +58,7 @@ export function ViewhalamanquizCard({
       : `q${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
   const questions = items;
-  
+
   const handleAddQuestion = () => {
     if (!setQuestions) return;
     setQuestions((prev) => {
@@ -96,7 +96,7 @@ export function ViewhalamanquizCard({
   };
 
   return (
-    <aside className="h-[calc(100vh-3.5rem)] w-[260px] shrink-0 border-r bg-white/50 dark:bg-neutral-900/80 backdrop-blur p-3 flex flex-col overflow-x-hidden">
+    <aside className="h-full w-[260px] shrink-0 border-r bg-white/50 dark:bg-neutral-900/80 backdrop-blur p-3 flex flex-col overflow-x-hidden">
       <div className="space-y-2">
         <div className="text-xs font-medium text-black">Quiz</div>
       </div>
@@ -105,7 +105,7 @@ export function ViewhalamanquizCard({
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="questions">
           {(provided) => (
-            <div 
+            <div
               className="space-y-2 mt-4 flex-1 overflow-auto overflow-x-hidden"
               {...provided.droppableProps}
               ref={provided.innerRef}
@@ -222,7 +222,7 @@ function QuizListItem({
             >
               <Trash2 className="h-4 w-4" />
             </button>
-          )}    
+          )}
 
         </div>
       </CardContent>

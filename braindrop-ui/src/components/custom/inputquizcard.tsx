@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import type { QuizPageItem } from "@/components/custom/viewhalamanquizcard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,32 +36,50 @@ const defaultAnswers: Answer[] = [
   { id: "a4", text: "", color: "green", shape: "square", optional: true },
 ];
 
-// ikon bentuk di sisi kiri jawaban
 const ShapeIcon = ({ shape }: { shape: Shape }) => {
   const map = { triangle: Triangle, diamond: Diamond, circle: Circle, square: Square };
   const Icon = map[shape];
   return <Icon className="h-4 w-4" />;
 };
 
+export type InputquizCardHandle = {
+  save: () => void;
+};
+
 type InputquizCardProps = {
   selectedQuestion?: QuizPageItem | null;
   onUpdateQuestion?: (patch: Partial<QuizPageItem>) => void;
+  selectedBg?: number | string | null;
+  onSelectBg?: (bg: number | string | null) => void;
 };
 
-export function InputquizCard({ selectedQuestion = null, onUpdateQuestion }: InputquizCardProps) {
+export const InputquizCard = forwardRef<InputquizCardHandle, InputquizCardProps>(({
+  selectedQuestion = null,
+  onUpdateQuestion,
+  selectedBg = null,
+  onSelectBg
+}, ref) => {
   const [question, setQuestion] = useState("");
   const [timerquiz, setTimerquiz] = useState("");
   const [answers, setAnswers] = useState<Answer[]>(defaultAnswers);
   const [correctId, setCorrectId] = useState<string | null>(null);
   const mediaRef = useRef<HTMLInputElement | null>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // New handler for BG upload
+  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    onSelectBg?.(url);
+  };
 
   const onDropMedia = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
     console.log("Question media selected:", file);
-    
-    // Create preview URL
+
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
   };
@@ -95,7 +113,6 @@ export function InputquizCard({ selectedQuestion = null, onUpdateQuestion }: Inp
     ]);
   };
 
-  // hapus jawaban (jaga minimal 2 jawaban)
   const removeAnswer = (id: string) => {
     setAnswers((prev) => {
       if (prev.length <= 2) return prev;
@@ -131,20 +148,30 @@ export function InputquizCard({ selectedQuestion = null, onUpdateQuestion }: Inp
 
 
   return (
-      <div className="w-full max-w-4xl mx-auto space-y-4">
-        {/* Input pertanyaan */}
-        <Input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Write your own question..."
-          className="h-12 text-lg rounded-xl bg-white dark:bg-neutral-900/70"
-        />
+    <div className="w-full max-w-4xl mx-auto space-y-4">
+      {/* Input pertanyaan */}
+      <Input
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        placeholder="Write your own question..."
+        className="h-12 text-lg rounded-xl bg-white dark:bg-neutral-900/70"
+      />
 
-        <div className="flex flex-row gap-2 items-end">
-          {Array.from({ length: 8 }).map((_, i) => {
-            const idx = i + 1;
-            return (
-              <div key={`bg${idx}`} className="w-[65px] h-[40px] rounded-md overflow-hidden">
+      <div className="flex flex-row gap-2 items-end">
+        {Array.from({ length: 8 }).map((_, i) => {
+          const idx = i + 1;
+          const isSelected = selectedBg === idx;
+          return (
+            <div
+              key={`bg${idx}`}
+              className={cn(
+                "rounded-md cursor-pointer transition-all",
+                isSelected ? "p-1.5" : "w-[65px] h-[40px]"
+              )}
+              style={isSelected ? { backgroundColor: '#4056fb', width: '65px', height: '40px' } : {}}
+              onClick={() => onSelectBg?.(idx)}
+            >
+              <div className="w-full h-full rounded-sm overflow-hidden">
                 <img
                   src={`/background/bg${idx}.png`}
                   alt={`Background ${idx}`}
@@ -152,122 +179,141 @@ export function InputquizCard({ selectedQuestion = null, onUpdateQuestion }: Inp
                   draggable={false}
                 />
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
 
-          <div className="flex items-center gap-2 ml-auto">
-            <Input
-              type="number"
-              min={0}
-              value={timerquiz}
-              onChange={(e) => handleTimerChange(e.target.value)}
-              placeholder="30"
-              className="w-28 h-10 rounded-lg bg-white dark:bg-neutral-900/70"
+        <div className="flex items-center gap-2 ml-auto">
+          {/* Add Image Button */}
+          <div
+            className="cursor-pointer text-sm font-medium text-white/90 hover:text-white flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/10 transition"
+            onClick={() => bgInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={bgInputRef}
+              onChange={handleBgUpload}
             />
-            <h1 className="text-white">Seconds</h1>
+            <div className="flex items-center justify-center bg-white/20 rounded-full w-5 h-5">
+              <Plus size={14} className="text-white" />
+            </div>
+            <span>Add image</span>
           </div>
-        </div>
 
+          <div className="w-[1px] h-6 bg-white/20 mx-2" />
 
-        {/* Kartu upload media pertanyaan */}
-        <Card className="border-0 shadow-md bg-white dark:bg-neutral-900/70">
-          <CardContent className="p-0">
-            <label
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                onDropMedia(e.dataTransfer.files);
-              }}
-              className={cn(
-                "flex flex-col items-center justify-center text-center gap-2 h-56 rounded-xl cursor-pointer relative",
-                previewUrl ? "p-2" : ""
-              )}
-            >
-              {previewUrl ? (
-                // Preview container
-                <div className="relative w-full h-full group">
-                  <img 
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center rounded-lg">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setPreviewUrl(null);
-                      }}
-                    >
-                      Change Media
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                // Upload UI
-                <>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-neutral-800">
-                    <UploadCloud className="h-12 w-12" />
-                  </div>
-                  <div className="text-sm font-medium">Find or attach your media</div>
-                  <div className="text-xs text-neutral-500">
-                    <span className="underline">Import file</span> or drag your file to here to upload
-                  </div>
-                  <input
-                    ref={mediaRef}
-                    type="file"
-                    accept="image/*,video/*,audio/*"
-                    className="hidden"
-                    onChange={(e) => onDropMedia(e.target.files)}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="secondary" 
-                    size="sm" 
-                    onClick={() => mediaRef.current?.click()}
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> Choose File
-                  </Button>
-                </>
-              )}
-            </label>
-          </CardContent>
-        </Card>
-
-        {/* Grid jawaban */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {answers.map((a) => (
-            <AnswerTile
-              key={a.id}
-              answer={a}
-              isCorrect={correctId === a.id}
-              onChangeText={(val) =>
-                setAnswers((prev) => prev.map((x) => (x.id === a.id ? { ...x, text: val } : x)))
-              }
-              onToggleCorrect={() => setCorrectId((prev) => (prev === a.id ? null : a.id))}
-              onPickMedia={(file) => onAnswerMedia(a.id, file)}
-              onRemove={() => removeAnswer(a.id)}
-              showRemove={(a.optional ?? false) || answers.length > 2}
-              barClass={colorClasses[a.color]}
-            />
-          ))}
-        </div>
-
-        {/* Tambah jawaban */}
-        <div className="flex justify-center">
-          <Button variant="secondary" className="rounded-full" onClick={addMoreAnswer}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add more answer
-          </Button>
+          <Input
+            type="number"
+            min={0}
+            value={timerquiz}
+            onChange={(e) => handleTimerChange(e.target.value)}
+            placeholder="30"
+            className="w-28 h-10 rounded-lg bg-white dark:bg-neutral-900/70"
+          />
+          <h1 className="text-white">Seconds</h1>
         </div>
       </div>
 
-  );
-}
 
-/* ===================== Sub Components ===================== */
+      {/* Kartu upload media pertanyaan */}
+      <Card className="border-0 shadow-md bg-white dark:bg-neutral-900/70">
+        <CardContent className="p-0">
+          <label
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              onDropMedia(e.dataTransfer.files);
+            }}
+            className={cn(
+              "flex flex-col items-center justify-center text-center gap-2 h-56 rounded-xl cursor-pointer relative",
+              previewUrl ? "p-2" : ""
+            )}
+          >
+            {previewUrl ? (
+              // Preview container
+              <div className="relative w-full h-full group">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center rounded-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPreviewUrl(null);
+                    }}
+                  >
+                    Change Media
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // Upload UI
+              <>
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-neutral-800">
+                  <UploadCloud className="h-12 w-12" />
+                </div>
+                <div className="text-sm font-medium">
+                  Find or attach your media
+                </div>
+                <div className="text-xs text-neutral-500">
+                  <span className="underline">Import file</span> or drag your file to here to upload
+                </div>
+                <input
+                  ref={mediaRef}
+                  type="file"
+                  accept="image/*,video/*,audio/*"
+                  className="hidden"
+                  onChange={(e) => onDropMedia(e.target.files)}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => mediaRef.current?.click()}
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Choose File
+                </Button>
+              </>
+            )}
+          </label>
+        </CardContent>
+      </Card>
+
+      {/* Grid jawaban */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {answers.map((a) => (
+          <AnswerTile
+            key={a.id}
+            answer={a}
+            isCorrect={correctId === a.id}
+            onChangeText={(val) =>
+              setAnswers((prev) => prev.map((x) => (x.id === a.id ? { ...x, text: val } : x)))
+            }
+            onToggleCorrect={() => setCorrectId((prev) => (prev === a.id ? null : a.id))}
+            onPickMedia={(file) => onAnswerMedia(a.id, file)}
+            onRemove={() => removeAnswer(a.id)}
+            showRemove={(a.optional ?? false) || answers.length > 2}
+            barClass={colorClasses[a.color]}
+          />
+        ))}
+      </div>
+
+      {/* Tambah jawaban */}
+      <div className="flex justify-center">
+        <Button variant="secondary" className="rounded-full" onClick={addMoreAnswer}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add more answer
+        </Button>
+      </div>
+    </div>
+  );
+});
 
 function AnswerTile({
   answer,
@@ -298,15 +344,14 @@ function AnswerTile({
         "focus-within:ring-2 focus-within:ring-violet-500"
       )}
     >
-      {/* Tombol X untuk hapus */}
       {showRemove && (
         <button
           type="button"
           aria-label="Remove answer"
           onClick={onRemove}
           className="absolute -top-2 -right-2 z-10 grid h-6 w-6 place-items-center
-                    rounded-full border border-black/50 bg-white text-neutral-600 shadow-sm
-                    hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+                  rounded-full border border-black/50 bg-white text-neutral-600 shadow-sm
+                  hover:bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800"
         >
           <X className="h-3.5 w-3.5 cursor-pointer" />
         </button>
@@ -362,7 +407,6 @@ function AnswerTile({
   );
 }
 
-/* util kecil untuk placeholder */
 function getIndexSuffix(id: string) {
   const n = Number(id.replace(/\D/g, "")) || 1;
   return n;

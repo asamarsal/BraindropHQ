@@ -43,7 +43,7 @@ export default function Topbar() {
       try {
         await audio.play();
       } catch {
-        
+
         window.addEventListener("pointerdown", playOnInteraction, { once: true });
         window.addEventListener("keydown", playOnInteraction, { once: true });
       }
@@ -77,7 +77,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 bg-white dark:bg-black/60 backdrop-blur-md border-b border-black shadow-sm">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-black/60 backdrop-blur-md border-b border-black shadow-sm flex items-center z-50">
         <audio
           ref={audioRef}
           src="/music/background-music.mp3"
@@ -86,7 +86,7 @@ export default function Topbar() {
           playsInline
           className="hidden"
         />
-        <div className="w-full py-2 flex justify-between">
+        <div className="w-full flex justify-between">
           <Link href="/" className="pl-2">
             <img src="/icon/braindrophq3.png" alt="BrainDrop HQ Logo" className="h-8 w-auto pt-2" />
           </Link>
