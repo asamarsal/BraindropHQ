@@ -18,7 +18,7 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col space-y-4">
-          <Link href="/host">
+          <Link href="/create">
             <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
               Host a Game
             </button>
