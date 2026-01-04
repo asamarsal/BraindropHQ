@@ -46,7 +46,7 @@ export default function PlayerRoulettePage() {
 
     const joinRoom = (code: string, playerName: string, isAuto = false) => {
         setIsLoading(true);
-        socket.emit("join_room", { roomCode: code, playerName }, (response: any) => {
+        socket.emit("join_room", { roomCode: code, playerName }, (response: { success: boolean; roomCode: string; message?: string }) => {
             setIsLoading(false);
             if (response.success) {
                 // Save session
@@ -58,14 +58,14 @@ export default function PlayerRoulettePage() {
                 setStep('LOBBY');
                 if (!isAuto) toast.success("Joined room successfully!");
             } else {
-                if (isAuto) {
-                    // If auto-reconnect fails, clear storage
+                if (!isAuto) {
+                    toast.error(response.message || "Invalid Room Code or connection failed");
+                } else {
+                    // If auto-reconnect fails, clear storage and prompt re-login
                     localStorage.removeItem("player_room_code");
                     localStorage.removeItem("player_name");
                     setStep('LOGIN');
                     toast.error("Session expired. Please join again.");
-                } else {
-                    toast.error(response.message || "Failed to join room");
                 }
             }
         });
@@ -154,7 +154,7 @@ export default function PlayerRoulettePage() {
                             </div>
 
                             <div className="space-y-1">
-                                <h2 className="text-xl font-bold text-white">You're In!</h2>
+                                <h2 className="text-xl font-bold text-white">You&apos;re In!</h2>
                                 <p className="text-slate-400">Waiting for host to spin...</p>
                             </div>
 

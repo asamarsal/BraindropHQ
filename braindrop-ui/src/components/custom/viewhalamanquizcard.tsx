@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -91,13 +91,14 @@ export function ViewhalamanquizCard({
     });
   };
 
-  const onDragEnd = (result: any) => {
-    if (!result.destination || !setQuestions) return;
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source } = result;
+    if (!destination || !setQuestions) return;
+
     setQuestions((prev) => {
       const items = Array.from(prev);
-      const [reorderedItem] = items.splice(result.source.index, 1);
-      items.splice(result.destination.index, 0, reorderedItem);
-      // renumber titles to match new order -- REMOVED to preserve custom titles
+      const [reorderedItem] = items.splice(source.index, 1);
+      items.splice(destination.index, 0, reorderedItem);
       return items;
     });
   };

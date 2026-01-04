@@ -1,4 +1,4 @@
-// server/server.js
+/* eslint-disable */
 const { Server } = require('socket.io');
 const http = require('http');
 
@@ -37,16 +37,16 @@ io.on('connection', (socket) => {
       socket.emit('error', 'Game not found');
       return;
     }
-    
+
     game.players.set(socket.id, {
       name: playerName,
       score: 0,
       answered: false
     });
-    
+
     socket.join(`game-${gamePin}`);
     socket.emit('joined-game', { success: true });
-    
+
     // Notify host of new player
     io.to(game.host).emit('player-joined', {
       players: Array.from(game.players.values()).map(p => p.name)
@@ -57,10 +57,10 @@ io.on('connection', (socket) => {
   socket.on('start-game', (gamePin) => {
     const game = games.get(gamePin);
     if (!game || game.host !== socket.id) return;
-    
+
     game.state = 'question';
     game.currentQuestion = 0;
-    
+
     // Send first question to all players
     const question = game.quiz.questions[0];
     io.to(`game-${gamePin}`).emit('question-start', {
@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
       answers: question.answers,
       timeLimit: question.timeLimit || 20
     });
-    
+
     // Auto-end question after time limit
     setTimeout(() => {
       io.to(`game-${gamePin}`).emit('question-end');
@@ -82,23 +82,23 @@ io.on('connection', (socket) => {
   socket.on('submit-answer', ({ gamePin, answerIndex, timeTaken }) => {
     const game = games.get(gamePin);
     if (!game) return;
-    
+
     const player = game.players.get(socket.id);
     if (!player || player.answered) return;
-    
+
     const question = game.quiz.questions[game.currentQuestion];
     const isCorrect = answerIndex === question.correctAnswer;
-    
+
     if (isCorrect) {
       // Award points based on speed (max 1000 points)
       const timeBonus = Math.max(0, 500 - (timeTaken / question.timeLimit) * 500);
       player.score += Math.round(500 + timeBonus);
     }
-    
+
     player.answered = true;
-    
+
     socket.emit('answer-result', { correct: isCorrect, score: player.score });
-    
+
     // Notify host of answer count
     const answeredCount = Array.from(game.players.values()).filter(p => p.answered).length;
     io.to(game.host).emit('answer-count', {
@@ -111,12 +111,12 @@ io.on('connection', (socket) => {
   socket.on('next-question', (gamePin) => {
     const game = games.get(gamePin);
     if (!game || game.host !== socket.id) return;
-    
+
     // Reset answered status
     game.players.forEach(p => p.answered = false);
-    
+
     game.currentQuestion++;
-    
+
     if (game.currentQuestion >= game.quiz.questions.length) {
       // Game ended
       game.state = 'ended';

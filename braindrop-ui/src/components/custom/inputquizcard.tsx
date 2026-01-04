@@ -240,8 +240,8 @@ export const InputquizCard = forwardRef<InputquizCardHandle, InputquizCardProps>
       onUpdateQuestion?.({ title: data.title });
       setQuestion(data.title);
 
-      const validAnswers = data.answers.filter((ans: any) => ans.text && ans.text.trim().length > 0);
-      const newAnswers = validAnswers.map((ans: any, index: number) => ({
+      const validAnswers = data.answers.filter((ans: { text: string }) => ans.text && ans.text.trim().length > 0);
+      const newAnswers = validAnswers.map((ans: { text: string }, index: number) => ({
         id: `a${index + 1}`, // Ensure unique IDs
         text: ans.text,
         color: defaultAnswers[index % defaultAnswers.length].color, // Assign colors cyclically
@@ -250,7 +250,7 @@ export const InputquizCard = forwardRef<InputquizCardHandle, InputquizCardProps>
         media: null,
       }));
       setAnswers(newAnswers);
-      const correctAns = newAnswers.find((ans: any) => data.answers.find((dAns: any) => dAns.text === ans.text && dAns.isCorrect));
+      const correctAns = newAnswers.find((ans: { text: string }) => data.answers.find((dAns: { text: string; isCorrect: boolean }) => dAns.text === ans.text && dAns.isCorrect));
       if (correctAns) {
         setCorrectId(correctAns.id);
       } else {
@@ -534,6 +534,8 @@ export const InputquizCard = forwardRef<InputquizCardHandle, InputquizCardProps>
     </div>
   );
 });
+
+InputquizCard.displayName = "InputquizCard";
 
 function AnswerTile({
   answer,

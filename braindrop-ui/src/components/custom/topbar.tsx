@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
 import { Volume2, VolumeOff, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { LoginCard } from "@/components/custom/logincard";
 import { ThemeLanguageToggle } from "@/components/custom/theme-language-toggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Topbar() {
   const [muted, setMuted] = useState<boolean>(false);
@@ -44,7 +50,6 @@ export default function Topbar() {
       try {
         await audio.play();
       } catch {
-
         window.addEventListener("pointerdown", playOnInteraction, { once: true });
         window.addEventListener("keydown", playOnInteraction, { once: true });
       }
@@ -92,6 +97,25 @@ export default function Topbar() {
             <img src="/icon/braindrophq3.png" alt="BrainDrop HQ Logo" className="h-8 w-auto pt-2 dark:invert transition-all" />
           </Link>
           <div className="flex gap-2 items-center pr-4">
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="px-3 py-2 text-sm font-medium text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors outline-none cursor-pointer">
+                Quiz
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                <DropdownMenuItem asChild>
+                  <Link href="/create" className="w-full cursor-pointer">
+                    Interactive Quiz
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/roulette" className="w-full cursor-pointer">
+                    Roulette
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <ThemeLanguageToggle />
             <div>
               <button

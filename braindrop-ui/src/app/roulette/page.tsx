@@ -60,7 +60,7 @@ export default function RoulettePage() {
         // Host Logic - Always active in background to keep Live list updated
         const savedCode = localStorage.getItem("host_room_code");
         if (savedCode) {
-            socket.emit("reconnect_host", savedCode, (response: any) => {
+            socket.emit("reconnect_host", savedCode, (response: { success: boolean; entries?: RouletteEntry[] }) => {
                 if (response.success) {
                     setRoomCode(savedCode);
                     if (response.entries) setLiveEntries(response.entries);
@@ -74,7 +74,7 @@ export default function RoulettePage() {
         }
 
         function createRoom() {
-            socket.emit("create_room", (response: any) => {
+            socket.emit("create_room", (response: { success: boolean; roomCode: string }) => {
                 if (response.success) {
                     setRoomCode(response.roomCode);
                     localStorage.setItem("host_room_code", response.roomCode);

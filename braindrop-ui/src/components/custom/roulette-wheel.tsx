@@ -16,12 +16,20 @@ interface RouletteWheelProps {
 const COLORS = [
     '#EF4444', // Red 500
     '#3B82F6', // Blue 500
-    '#10B981', // Emerald 500
     '#F59E0B', // Amber 500
+    '#2DD4BF', // Teal 400
     '#8B5CF6', // Violet 500
+    '#A3E635', // Lime 400
     '#EC4899', // Pink 500
-    '#6366F1', // Indigo 500
+    '#22D3EE', // Cyan 400
     '#F97316', // Orange 500
+    '#6366F1', // Indigo 500
+    '#10B981', // Emerald 500
+    '#E879F9', // Fuchsia 400
+    '#FACC15', // Yellow 400
+    '#38BDF8', // Sky 400
+    '#FB7185', // Rose 400
+    '#4ADE80', // Green 400
 ];
 
 export const RouletteWheel: React.FC<RouletteWheelProps> = ({
@@ -35,6 +43,35 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({
     const [currentRotation, setCurrentRotation] = useState(0);
     const [arrowColor, setArrowColor] = useState<string>("white");
 
+    // Memoize assigned colors to prevent flickering and ensure consistency
+    const entriesWithColors = React.useMemo(() => {
+        if (entries.length === 0) return [];
+
+        const assigned = entries.map((entry, index) => {
+            // Default sequential assignment
+            let colorIndex = index % COLORS.length;
+
+            // Logic to prevent adjacent duplicates
+            // Especially for the last item wrapping around to the first
+            if (index === entries.length - 1 && entries.length > 2) {
+                const firstColorIndex = 0; // First item always gets index 0 typically
+                const prevColorIndex = (index - 1) % COLORS.length;
+
+                // While acts like first OR acts like previous (collision), shift
+                while (
+                    colorIndex === firstColorIndex ||
+                    colorIndex === prevColorIndex
+                ) {
+                    colorIndex = (colorIndex + 1) % COLORS.length;
+                }
+            }
+
+            return { ...entry, displayColor: entry.color || COLORS[colorIndex] };
+        });
+
+        return assigned;
+    }, [entries]);
+
     // Sync rotation prop to local state for animation
     useEffect(() => {
         if (isSpinning) {
@@ -47,33 +84,20 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({
         let animationFrameId: number;
 
         const updateColor = () => {
-            if (!wheelRef.current || entries.length === 0) return;
+            if (!wheelRef.current || entriesWithColors.length === 0) return;
 
-            // Get current visual rotation from DOM
             const style = window.getComputedStyle(wheelRef.current);
             const matrix = new WebKitCSSMatrix(style.transform);
-            // Calculate rotation from matrix (a, b)
-            // angle = atan2(b, a)
             let angle = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
             if (angle < 0) angle += 360;
-
-            // Total cumulative rotation isn't in matrix (it's mod 360), but for color it's fine.
-            // Wait, we set transform as `rotate(N deg)`.
-            // Matrix gives normalized 0-360.
-
-            // Formula: Index I starts at (I*S - 90 + R).
-            // We want Angle 0 (Right/Pointer).
-            // (I*S - 90 + R) = 0 => I*S = 90 - R.
-            // visualAngle = (90 - angle) normalized.
 
             let relativeAngle = (90 - angle) % 360;
             if (relativeAngle < 0) relativeAngle += 360;
 
-            const segmentAngle = 360 / entries.length;
-            const index = Math.floor(relativeAngle / segmentAngle) % entries.length;
+            const segmentAngle = 360 / entriesWithColors.length;
+            const index = Math.floor(relativeAngle / segmentAngle) % entriesWithColors.length;
 
-            // Get color
-            const color = entries[index]?.color || COLORS[index % COLORS.length];
+            const color = entriesWithColors[index]?.displayColor || "white";
             setArrowColor(color);
 
             if (isSpinning) {
@@ -84,21 +108,19 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({
         if (isSpinning) {
             animationFrameId = requestAnimationFrame(updateColor);
         } else {
-            // Set final color based on target rotation
-            // Use exact rotation prop
-            let angle = rotation % 360;
+            const angle = rotation % 360;
             let relativeAngle = (90 - angle) % 360;
             if (relativeAngle < 0) relativeAngle += 360;
-            const segmentAngle = 360 / Math.max(1, entries.length);
-            const index = Math.floor(relativeAngle / segmentAngle) % entries.length;
-            const color = entries[index]?.color || COLORS[index % COLORS.length];
+            const segmentAngle = 360 / Math.max(1, entriesWithColors.length);
+            const index = Math.floor(relativeAngle / segmentAngle) % entriesWithColors.length;
+            const color = entriesWithColors[index]?.displayColor || "white";
             setArrowColor(color);
         }
 
         return () => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
         };
-    }, [isSpinning, entries, rotation]);
+    }, [isSpinning, entriesWithColors, rotation]);
 
     // Handle transition end to trigger completion
     const handleTransitionEnd = () => {
@@ -107,7 +129,7 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({
         }
     };
 
-    const totalEntries = entries.length;
+    const totalEntries = entriesWithColors.length;
     const segmentAngle = 360 / Math.max(1, totalEntries);
 
     if (totalEntries === 0) {
@@ -139,19 +161,8 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({
                 onTransitionEnd={handleTransitionEnd}
             >
                 {/* Segments */}
-                {entries.map((entry, index) => {
-                    const rotate = index * segmentAngle;
-                    // Skew is used if we used CSS sectors, but here we might use SVG or Conic Gradient
-                    // Easier approach for dynamic text: SVG
-                    return null;
-                })}
-
-                {/* Let's use SVG for everything inside for easier polar coordinate math */}
                 <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                    {/* -rotate-90 to make 0 index start at 12 o'clock if needed, 
-                        but our logic assumes 0 is right. Let's start standard. */}
-
-                    {entries.map((entry, index) => {
+                    {entriesWithColors.map((entry, index) => {
                         // Calculate SVG Path for Segment
                         // x = r * cos(a), y = r * sin(a)
                         const startAngle = index * segmentAngle;
@@ -181,7 +192,7 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({
                             <g key={entry.id}>
                                 <path
                                     d={pathData}
-                                    fill={entry.color || COLORS[index % COLORS.length]}
+                                    fill={entry.displayColor}
                                     stroke="#1e293b"
                                     strokeWidth="0.5"
                                 />
