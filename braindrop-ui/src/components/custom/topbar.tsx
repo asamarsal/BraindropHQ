@@ -2,7 +2,7 @@
 
 import { Volume2, VolumeOff, X, Menu } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { LoginCard } from "@/components/custom/logincard";
 import { ThemeLanguageToggle } from "@/components/custom/theme-language-toggle";
 import {
@@ -11,58 +11,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAudio } from "@/providers/audio-provider";
 
 export default function Topbar() {
-  const [muted, setMuted] = useState<boolean>(false);
+  const { muted, toggleMute } = useAudio();
   const [loginClicked, setLoginClicked] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("bdhq-muted");
-    if (saved !== null) setMuted(saved === "true");
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("bdhq-muted", String(muted));
-  }, [muted]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.muted = muted;
-    if (muted) {
-      audio.pause();
-      return;
-    }
-
-    const playOnInteraction = async () => {
-      try {
-        await audio.play();
-      } finally {
-        window.removeEventListener("pointerdown", playOnInteraction);
-        window.removeEventListener("keydown", playOnInteraction);
-      }
-    };
-
-    const unlockPlayback = async () => {
-      try {
-        await audio.play();
-      } catch {
-        window.addEventListener("pointerdown", playOnInteraction, { once: true });
-        window.addEventListener("keydown", playOnInteraction, { once: true });
-      }
-    };
-
-    unlockPlayback();
-
-    return () => {
-      window.removeEventListener("pointerdown", playOnInteraction);
-      window.removeEventListener("keydown", playOnInteraction);
-    };
-  }, [muted]);
 
   useEffect(() => {
     if (!loginClicked) return;
@@ -79,7 +34,6 @@ export default function Topbar() {
     };
   }, [showLoginCard]);
 
-  const toggleMute = useCallback(() => setMuted(m => !m), []);
   const closeLoginCard = useCallback(() => setShowLoginCard(false), []);
 
   return (
@@ -87,14 +41,6 @@ export default function Topbar() {
       <header className="fixed top-0 left-0 right-0 z-50 flex flex-col transition-all">
         {/* Main Bar */}
         <div className="h-14 w-full bg-white/60 dark:bg-black/50 backdrop-blur-md border-b border-white/20 shadow-sm flex items-center justify-between px-4 relative z-50">
-          <audio
-            ref={audioRef}
-            src="/music/background-music.mp3"
-            autoPlay
-            loop
-            playsInline
-            className="hidden"
-          />
           <Link href="/" className="flex-shrink-0" onClick={() => setIsMobileMenuOpen(false)}>
             <img src="/icon/braindrophq3.png" alt="BrainDrop HQ Logo" className="h-8 w-auto pt-2 dark:invert transition-all" />
           </Link>

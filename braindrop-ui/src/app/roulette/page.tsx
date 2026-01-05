@@ -200,15 +200,15 @@ export default function RoulettePage() {
     };
 
     return (
-        <div className="h-screen bg-slate-950 text-white font-sans flex flex-col overflow-hidden">
+        <div className="h-[100dvh] bg-slate-950 text-white font-sans flex flex-col overflow-hidden">
             <Topbar />
 
-            <div className="flex-1 flex flex-col md:flex-row pt-14 h-full overflow-hidden relative">
-                {/* Left Sidebar - Entries */}
-                <div className="w-full md:w-80 bg-slate-900 border-r border-slate-800 flex flex-col z-10 shadow-xl h-full">
+            <div className="flex-1 flex flex-col-reverse md:flex-row pt-14 h-full overflow-hidden relative">
+                {/* Left Sidebar - Entries (Bottom on Mobile, Left on Desktop) */}
+                <div className="w-full md:w-80 bg-slate-900 border-t md:border-t-0 md:border-r border-slate-800 flex flex-col z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-xl h-[40%] md:h-full shrink-0">
 
                     {/* MODE TABS */}
-                    <div className="p-2 grid grid-cols-2 gap-1 bg-slate-950/50 border-b border-slate-800">
+                    <div className="p-2 grid grid-cols-2 gap-1 bg-slate-950/50 border-b border-slate-800 shrink-0">
                         <button
                             onClick={() => setMode('MANUAL')}
                             className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${mode === 'MANUAL'
@@ -235,7 +235,7 @@ export default function RoulettePage() {
 
                     {/* Room Code Display (Only in Live Mode) */}
                     {mode === 'LIVE' && (
-                        <div className="p-4 bg-red-900/10 border-b border-red-900/30 animate-in slide-in-from-top-2 flex items-center justify-between gap-2">
+                        <div className="p-4 bg-red-900/10 border-b border-red-900/30 animate-in slide-in-from-top-2 flex items-center justify-between gap-2 shrink-0">
                             <div className="text-center flex-1">
                                 <div className="text-[10px] text-red-400 uppercase tracking-widest mb-1">Live Room</div>
                                 <div className="text-2xl font-black text-white tracking-widest font-mono select-all">
@@ -247,7 +247,7 @@ export default function RoulettePage() {
                             </div>
 
                             {/* QR Code */}
-                            <div className="bg-white p-2 rounded shadow-lg shrink-0">
+                            <div className="bg-white p-2 rounded shadow-lg shrink-0 hidden md:block">
                                 <QRCode
                                     value="http://localhost:3000/player-roulette"
                                     size={64}
@@ -258,7 +258,7 @@ export default function RoulettePage() {
                         </div>
                     )}
 
-                    <div className="p-4 border-b border-slate-800">
+                    <div className="p-4 border-b border-slate-800 shrink-0">
                         {/* Input Field - Always Visible actually, allows Admin to inject names in Live mode too if they want */}
                         <div className="flex items-center gap-2 mb-4">
                             <Input
@@ -282,13 +282,13 @@ export default function RoulettePage() {
                         </div>
                     </div>
 
-                    <div className="p-2 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center text-xs text-slate-400">
+                    <div className="p-2 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center text-xs text-slate-400 shrink-0">
                         <span>{currentEntries.length} Entries ({mode})</span>
                         <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-500" /> Secure</span>
                     </div>
 
                     <ScrollArea className="flex-1 min-h-0 p-2 w-full">
-                        <div className="space-y-1">
+                        <div className="space-y-1 pb-16 md:pb-0">
                             {currentEntries.map((entry) => (
                                 <div key={entry.id} className="group flex items-center justify-between p-2 rounded hover:bg-slate-800 transition-colors text-sm">
                                     <span className="truncate">{entry.text}</span>
@@ -301,8 +301,8 @@ export default function RoulettePage() {
                     </ScrollArea>
                 </div>
 
-                {/* Main Content - Wheel */}
-                <div className="flex-1 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 flex flex-col items-center justify-center p-8 relative">
+                {/* Main Content - Wheel (Top on Mobile, Right on Desktop) */}
+                <div className="flex-1 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden h-[60%] md:h-full">
 
                     {/* Hash Commitment Display (Phase 1) */}
                     <div className="absolute top-4 right-4 max-w-md text-right hidden md:block opacity-50 hover:opacity-100 transition-opacity">
@@ -312,7 +312,7 @@ export default function RoulettePage() {
                         </div>
                     </div>
 
-                    <div className="relative transform scale-75 md:scale-100 transition-transform">
+                    <div className="relative transform scale-[0.6] md:scale-100 transition-transform">
                         <RouletteWheel
                             entries={currentEntries}
                             isSpinning={isSpinning}
