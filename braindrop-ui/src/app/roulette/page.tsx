@@ -12,7 +12,7 @@ import { RouletteGame } from "@/lib/roulette/state-manager";
 import { type RouletteEntry } from "@/lib/roulette/types";
 import { WinnerSelection } from '@/lib/roulette/winner-selection';
 import { CommitReveal } from '@/lib/crypto/commit-reveal';
-import { Trash2, Shuffle, Plus, ArrowDownAZ, ArrowUpAZ, ShieldCheck, Trophy, X } from 'lucide-react';
+import { Trash2, Shuffle, Plus, ArrowDownAZ, ArrowUpAZ, ShieldCheck, Trophy, X, Search } from 'lucide-react';
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
 
@@ -46,6 +46,10 @@ export default function RoulettePage() {
     const [lastWinner, setLastWinner] = useState<RouletteEntry | null>(null);
     const [currentSeedHash, setCurrentSeedHash] = useState<string>("");
     const [roomCode, setRoomCode] = useState<string | null>(null);
+
+    // Modal State
+    const [isEntriesModalOpen, setIsEntriesModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Initialize game & socket
     useEffect(() => {
@@ -282,10 +286,15 @@ export default function RoulettePage() {
                         </div>
                     </div>
 
-                    <div className="p-2 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center text-xs text-slate-400 shrink-0">
-                        <span>{currentEntries.length} Entries ({mode})</span>
+                    <button
+                        onClick={() => setIsEntriesModalOpen(true)}
+                        className="w-full p-2 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center text-xs text-slate-400 shrink-0 hover:bg-slate-900 transition-colors cursor-pointer text-left"
+                    >
+                        <span className="font-semibold text-slate-300 underline decoration-dotted underline-offset-4">
+                            {currentEntries.length} Entries ({mode})
+                        </span>
                         <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-500" /> Secure</span>
-                    </div>
+                    </button>
 
                     <ScrollArea className="flex-1 min-h-0 p-2 w-full">
                         <div className="space-y-1 pb-16 md:pb-0">
@@ -367,6 +376,75 @@ export default function RoulettePage() {
                         </div>
                     )}
                 </div>
+
+                {/* ENTRIES MANAGER MODAL */}
+                {isEntriesModalOpen && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+                        <Card className="w-full max-w-lg bg-slate-900 border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+                            <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+                                <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                                    Entries Manager
+                                    <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">
+                                        {currentEntries.length}
+                                    </span>
+                                </h3>
+                                <button
+                                    onClick={() => setIsEntriesModalOpen(false)}
+                                    className="p-1 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 border-b border-slate-800 bg-slate-900">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <Input
+                                        placeholder="Search entries..."
+                                        className="pl-9 bg-slate-950 border-slate-700 focus:ring-blue-600"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <ScrollArea className="flex-1 p-0">
+                                <div className="divide-y divide-slate-800/50">
+                                    {currentEntries
+                                        .filter(e => e.text.toLowerCase().includes(searchQuery.toLowerCase()))
+                                        .map((entry) => (
+                                            <div key={entry.id} className="flex items-center justify-between p-4 hover:bg-slate-800/50 transition-colors">
+                                                <span className="text-sm font-medium text-slate-200">{entry.text}</span>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-slate-500 hover:text-red-400 hover:bg-red-400/10 h-8 w-8 p-0 rounded-full"
+                                                    onClick={() => handleRemoveEntry(entry.id)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    {currentEntries.filter(e => e.text.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                                        <div className="p-8 text-center text-slate-500 text-sm">
+                                            No entries found.
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
+
+                            <div className="p-4 border-t border-slate-800 bg-slate-950/50 flex justify-end">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsEntriesModalOpen(false)}
+                                    className="border-slate-700 hover:bg-slate-800 text-slate-300"
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </Card>
+                    </div>
+                )}
             </div>
         </div>
     );
