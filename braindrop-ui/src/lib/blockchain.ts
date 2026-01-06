@@ -46,10 +46,15 @@ export async function createWriteClient() {
         throw new Error('No wallet found. Please install MetaMask.');
     }
 
-    const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+    const account = accounts[0];
+
+    if (!account) {
+        throw new Error('No account found');
+    }
 
     return createWalletClient({
-        account,
+        account: account as `0x${string}`,
         chain: mantleSepolia,
         transport: custom(window.ethereum),
     });
@@ -62,7 +67,7 @@ export async function getConnectedAddress(): Promise<string | null> {
     }
 
     try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
         return accounts[0] || null;
     } catch {
         return null;
@@ -81,7 +86,7 @@ export async function connectWallet(): Promise<string> {
         throw new Error('No wallet found. Please install MetaMask.');
     }
 
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
     return accounts[0];
 }
 
